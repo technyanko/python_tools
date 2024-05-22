@@ -1,0 +1,62 @@
+import tkinter as tk
+from tkinter import filedialog
+import PyPDF2
+import openpyxl
+
+# PDFファイルを読み取る関数
+def read_pdf(file_path):
+    text = ''
+    # PDFファイルをバイナリモードで開く
+    with open(file_path, 'rb') as file:
+        reader = PyPDF2.PdfFileReader(file)
+        
+        # PDFが暗号化されている場合、デクリプトを試みる
+        if reader.isEncrypted:
+            reader.decrypt('')
+        
+        # 全ページのテキストを抽出
+        for page_num in range(reader.numPages):
+            page = reader.getPage(page_num)
+            text += page.extract_text()
+    
+    return text
+
+# テキストをExcelファイルに保存する関数
+def save_to_excel(text, excel_path):
+    # 新しいExcelワークブックを作成
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.title = 'PDF'
+    
+    # テキストを行ごとに分割してExcelに書き込む
+    for i, line in enumerate(text.split('\n')):
+        sheet.cell(row=i+1, column=1, value=line)
+    
+    # Excelファイルを保存
+    workbook.save(excel_path)
+
+# ファイル選択ダイアログを開く関数
+def open_file():
+    # PDFファイルを選択するダイアログを表示
+    file_path = filedialog.askopenfilename(filetypes=[("PDF files", "*.pdf")])
+    if file_path:
+        # 選択したPDFファイルのテキストを読み取る
+        text = read_pdf(file_path)
+        # Excelファイルの保存先を指定するダイアログを表示
+        excel_path = filedialog.asksaveasfilename(defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx")])
+        if excel_path:
+            # テキストをExcelファイルに保存
+            save_to_excel(text, excel_path)
+            # 処理が成功したことを通知するメッセージを表示
+            tk.messagebox.showinfo("成功！", "PDFの内容をExcelに書き出しました！")
+
+# メインウィンドウの設定
+root = tk.Tk()
+root.title("PDFをExcelに変換")
+
+# 「Open PDF」ボタンを作成して配置
+open_button = tk.Button(root, text="Open PDF", command=open_file)
+open_button.pack(pady=20)
+
+# GUIのメインループを開始
+root.mainloop()
